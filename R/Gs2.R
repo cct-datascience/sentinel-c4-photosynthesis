@@ -11,7 +11,10 @@ Gs <- function(fileID){# input is ID column from the experiments dataframe
   require(dplyr)
 
   # Read in data
-  fileNames <- dir("../sentinel-detection/data/cleaned_data/", pattern = as.character(fileID), recursive = T)
+  fileNames <- dir("../sentinel-detection/data/cleaned_data", 
+                   pattern = as.character(fileID), 
+                   recursive = TRUE, 
+                   full.names = TRUE)
   
   # Remove if Rd files present (currently, Rd file does not include raw data and cannot be used for stomatal parameter estimation)
   ind <- which(substr(fileNames, 1, 2) == "Rd")
@@ -22,14 +25,15 @@ Gs <- function(fileID){# input is ID column from the experiments dataframe
   df <- data.frame()
   for(i in 1:length(fileNames)){
     # Read in csv
-    temp <- read.csv(paste0("../sentinel-detection/data/cleaned_data/", fileNames[i]))
+    temp <- readr::read_csv(fileNames[i])
     
     # Select relevant columns
-    temp2 <- subset(temp, select = c(species, rep, obs, time, date, hhmmss, 
-                                     CO2_s, Qin, A, gsw, VPDleaf, RHcham, Ca))
+    temp2 <- temp %>% select(species, rep, obs, 
+                             CO2_s, Qin, A, gsw, 
+                             VPDleaf, RHcham, Ca)
     
     # Filter ACi data for CO2 values > 45 ppm
-    if(substring(fileNames[i], 1, 2) == "AC"){
+    if(grepl(pattern = "ACi", x = fileNames[i])){
       temp3 <- subset(temp2, CO2_s >= 45)
     }
     
@@ -61,15 +65,19 @@ Gs <- function(fileID){# input is ID column from the experiments dataframe
   for(i in 1:length(dflist)){
     
     # First: fit Medlyn et al. (2011) equation
-    gsfit  <- fitBB(dflist[[i]], varnames = list(ALEAF = "A", GS = "gsw", VPD = "VPDleaf", Ca ="Ca", RH ="RHcham"), 
-                    gsmodel = c("BBOpti"), fitg0 = TRUE) 
+    df <- as.data.frame(dflist[[i]])
+    gsfit  <- fitBB(data = df, 
+                    varnames = list(ALEAF = "A", 
+                                    GS = "gsw", VPD = "VPDleaf", Ca ="Ca", RH ="RHcham"), 
+                    gsmodel = c("BBOpti"), 
+                    fitg0 = TRUE) 
     g1M     <- summary(gsfit$fit)$parameters[1]				# save g1 from fitted model
     g0M     <- summary(gsfit$fit)$parameters[2]	      # save g0 from fitted model
     g1M_se  <- summary(gsfit$fit)$parameters[1,2]     # save standard error of g1
     g0M_se  <- summary(gsfit$fit)$parameters[2,2]     # save standard error of g0
     
     # Second: fit the Ball-Berry (1987) model    
-    gsfit2  <- fitBB(dflist[[i]], varnames = list(ALEAF = "A", GS = "gsw", VPD = "VPDleaf", Ca ="Ca", RH ="RHcham"), 
+    gsfit2  <- fitBB(df, varnames = list(ALEAF = "A", GS = "gsw", VPD = "VPDleaf", Ca ="Ca", RH ="RHcham"), 
                      gsmodel = c("BallBerry"), fitg0 = TRUE) 
     g1BB     <- summary(gsfit2$fit)$parameters[1]				
     g0BB     <- summary(gsfit2$fit)$parameters[2]	
@@ -77,7 +85,7 @@ Gs <- function(fileID){# input is ID column from the experiments dataframe
     g0BB_se  <- summary(gsfit2$fit)$parameters[2,2]    
     
     # Third: fit the Ball-Berry-Leuning (1995) model    
-    gsfit3  <- fitBB(dflist[[i]], varnames = list(ALEAF = "A", GS = "gsw", VPD = "VPDleaf", Ca ="Ca", RH ="RHcham"), 
+    gsfit3  <- fitBB(df, varnames = list(ALEAF = "A", GS = "gsw", VPD = "VPDleaf", Ca ="Ca", RH ="RHcham"), 
                      gsmodel = c("BBLeuning"), fitg0 = TRUE, D0 = 1.6) 
     g1L     <- summary(gsfit3$fit)$parameters[1]				
     g0L     <- summary(gsfit3$fit)$parameters[2]	
@@ -113,7 +121,7 @@ Gs <- function(fileID){# input is ID column from the experiments dataframe
                          df$A/(df$CO2_s*sqrt(df$VPDleaf)),
                          df$A/df$Ca/(1+df$VPDleaf/1.6)),
                    type = c(rep("BB", nrow(df)), rep("M", nrow(df)), rep("BBL", nrow(df))))
-  params <- data.frame(type = rep(c("M", "BB", "BBL"), 3),
+  params <- data.frame(type = rep(c("M", "BB", "BBL"), length(dflist)),
                        rep = rep(names(dflist), each = 3),
                        slope = out$Value[out$trait %in% c("g1BB", "g1M", "g1L")],
                        int = out$Value[out$trait %in% c("g0BB", "g0M", "g0L")])

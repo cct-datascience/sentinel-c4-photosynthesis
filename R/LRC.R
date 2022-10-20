@@ -20,14 +20,24 @@ LRC <- function(fileID){# input is ID column from the experiments dataframe
   loc <- paste0("../sentinel-detection/data/derived_data/AQ/")
   
   for (i in 1:length(LIS)) {
-      PARlrc<-LIS[[i]]$Qin #Qin (aka PPFD or PAR)
-      photolrc<-LIS[[i]]$A #net photosynthetic rate (Anet)
-      curvelrc<-data.frame(PARlrc,photolrc)
+      PARlrc   <- LIS[[i]]$Qin #Qin (aka PPFD or PAR)
+      photolrc <- LIS[[i]]$A #net photosynthetic rate (Anet)
+      curvelrc <- data.frame(PARlrc,photolrc)
 
       # Fit the nolinear model
-      mods[[i]] <- nls(photolrc ~ (1/(2*theta))*
-                         (AQY*PARlrc+Am-sqrt((AQY*PARlrc+Am)^2-4*AQY*theta*Am*PARlrc))
-                       -Rd,start=list(Am=(max(photolrc)-min(photolrc)),AQY=0.05,Rd=-min(photolrc),theta=1)) 
+      z <- lm(log(photolrc) )
+      mods[[i]] <- nls(photolrc ~ (1 / (2 * theta))*
+                         (AQY * PARlrc + Am 
+                          - sqrt(
+                            (AQY * PARlrc + Am)^2 
+                            - 4 * AQY * theta * Am * PARlrc
+                            )
+                          )
+                       -Rd,
+                       start = list( Am = 10,#(max(photolrc)-min(photolrc)),
+                                     AQY = 1,
+                                     Rd = -1,#-min(photolrc),
+                                     theta = 1)) 
 
    
 

@@ -4,8 +4,7 @@ Parameter processing pipeline for the DARPA Sentinel project
 
 ## Overview
 
-This public repo contains analysis code for the model runs associated with the DARPA Sentinel project. As a first step, the parameters_pipeline folder contains code that estimates physiological traits that are needed as inputs for crop and ecosystem models.
-
+This public repo contains analysis code for the model runs associated with the DARPA Sentinel project. As a first step, the root directory contains code that estimates physiological traits that are needed as inputs for crop and ecosystem models.
 
 ### Parameter estimation: 'parameters_pipeline'
 

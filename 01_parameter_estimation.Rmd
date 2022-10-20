@@ -22,13 +22,13 @@ When data from a new experiment becomes available, record the experiment metadat
 
 Read in the experiment metadata. 
 ```{r}
-expDF <- read.csv("../../sentinel-detection/data/cleaned_data/experiments.csv",
+expDF <- read.csv("../sentinel-detection/data/cleaned_data/experiments.csv",
                   colClasses = c("character", "numeric", rep("character",2), rep("numeric",2)))
 ```
 
 Because new experiments are conducted periodically, load the previously estimated parameter sheet. Only new  experiments (without existing parameters data) will be run. 
 ```{r}
-params <- read.csv("../../sentinel-detection/data/derived_data/parameters_data.csv")
+params <- read.csv("../sentinel-detection/data/derived_data/parameters_data.csv")
 ```
 
 First, run the C4_Collatz.R function on ACi data to estimate vmax, or the maximum rate of carboxylation (umol CO2 m^-2 s^-1) for each plant replicate. This function uses a Bayesian estimation routine on a C4 photosynthesis model (Collatz et al. 1992). 
@@ -61,9 +61,11 @@ for(i in 1:length(ID)){
 In the case of the 2020 field measurements, only ACi curves and dark-adapted respiration were measured outdoors. Two leaves per plant replicate were covered in foil for ~20 minutes prior to measurement. Due to low sample size, population-level sample means of Rd were caluclated using Rd.R. 
 ```{r}
 ID <- expDF$ID[which(expDF$Rd == 1 & expDF$Date > max(params$Date))]
-for(i in 1:length(ID)){
-  Rd(fileID = ID[i])
-  print(paste0(ID[i], " completed"))
+if(!length(ID)==0){
+  for(i in 1:length(ID)){
+    Rd(fileID = ID[i])
+    print(paste0(ID[i], " completed"))
+  }
 }
 ```
 
@@ -73,10 +75,10 @@ Finally, once all three or four functions above are run and output parameter fil
 params <- data.frame()
 
 # Create vector of filenames
-fnames <- c(paste0("~/sentinel-detection/data/derived_data/ACi/", list.files("~/sentinel-detection/data/derived_data/ACi", pattern = "csv")),
-            paste0("~/sentinel-detection/data/derived_data/AQ/", list.files("~/sentinel-detection/data/derived_data/AQ", pattern = "csv")), 
-            paste0("~/sentinel-detection/data/derived_data/stomatal/", list.files("~/sentinel-detection/data/derived_data/stomatal", pattern = "csv")),
-            paste0("~/sentinel-detection/data/derived_data/Rd/", list.files("~/sentinel-detection/data/derived_data/Rd", pattern = "csv")))
+fnames <- dir("../sentinel-detection/data/derived_data", 
+              pattern = "parameters.csv", 
+              recursive = TRUE, 
+              full.names = TRUE)
 
 
 for(i in 1:length(fnames)){
@@ -87,6 +89,6 @@ for(i in 1:length(fnames)){
 
 # Combine parameters with experiment metadata
 params2 <- left_join(params, expDF, by = "ID")
-write.csv(params2, file = "~/sentinel-detection/data/derived_data/parameters_data.csv", row.names = F)
+write.csv(params2, file = "../sentinel-detection/data/derived_data/parameters_data.csv", row.names = F)
 ```
 

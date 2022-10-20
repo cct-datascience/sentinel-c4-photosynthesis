@@ -18,12 +18,14 @@ library(grid)
 
 Load full parameter data. 
 ```{r}
-params <- read.csv("../../sentinel-detection/data/derived_data/parameters_data.csv")
+params <- read.csv("../sentinel-detection/data/derived_data/parameters_data.csv")
 ```
 
 Subset to include 5 parameters of interest (included in BETY and used by BioCro). 
 ```{r}
-sub <- data.table(subset(params, trait %in% c("vmax", "Rd", "AQY", "theta_lc", "g0BB", "g1BB")))
+sub <- params %>% 
+  filter(trait %in% c("vmax", "Rd", "AQY", "theta_lc", "g0BB", "g1BB")) %>% 
+  as.data.table()
 ```
 
 Summarize mean, sd, se, and n by treatment and trait. 
@@ -31,7 +33,7 @@ Summarize mean, sd, se, and n by treatment and trait.
 sumdf <- sub[,.(mean = mean(Value), 
                   sd = sd(Value), 
                   n = length(Value),
-                  se = sd(Value)/sqrt(length(Value))), .(Treatment, trait)]
+                  se = sd(Value)/sqrt(length(Value))), .(Genotype, Treatment, trait)]
 ```
 
 Plot by treatment and trait, adding the sample size to the points as text. 
@@ -51,11 +53,11 @@ sumdf <- sumdf %>% mutate(Trait = case_when(trait == "vmax" ~ "V[max]~(µmol~m^{
 sumdf$Trait <- factor(sumdf$Trait, levels=c("V[max]~(µmol~m^{-2}~s^{-1})", "alpha", "R[dark]~(µmol~m^{-2}~s^{-1})", "theta", "g[0]~(mol~m^{-2}~s^{-1})", "g[1]"))
 
 fig1 <- ggplot(sumdf)+
-  geom_errorbar((aes(x = Treatment, ymin = mean - se, ymax = mean + se)), width = 0)+
-  geom_point(aes(x = Treatment, y = mean), shape = 15, size = 4)+
-  geom_text(aes(x = Treatment, y = mean, label=n), col = "white", size = 3.5, vjust = 0.5, fontface = "bold")+
+  geom_errorbar((aes(x = Genotype, ymin = mean - se, ymax = mean + se)), width = 0)+
+  geom_point(aes(x = Genotype, y = mean), shape = 15, size = 4)+
+  geom_text(aes(x = Genotype, y = mean, label=n), col = "white", size = 3.5, vjust = 0.5, fontface = "bold")+
   facet_wrap(~Trait,scale = "free_x", labeller = label_parsed)+
-  scale_x_discrete("Treatment")+
+  scale_x_discrete("Genotype")+
   scale_y_continuous("Mean")+
   theme_bw(base_size = 14)+
   theme()+
